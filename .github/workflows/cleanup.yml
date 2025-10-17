@@ -1,0 +1,42 @@
+
+name: cleanup-pr
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+env:
+  AWS_REGION: eu-central-1
+
+jobs:
+  remove-pr-env:
+    runs-on: ubuntu-latest
+    environment: dev
+    concurrency:
+      group: remove-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install deps
+        run: npm ci
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-oidc-deployer
+          role-session-name: github-cleanup-${{ github.run_id }}
+      - name: Install Serverless
+        run: npm i -g serverless@^3
+      - name: Remove PR environment
+        run: |
+          STAGE="pr-${{ github.event.pull_request.number }}"
+          echo "Removing stage: $STAGE"
+          serverless remove --stage "$STAGE"

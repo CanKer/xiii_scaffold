@@ -1,0 +1,137 @@
+# =========================
+# Node.js / TypeScript base
+# =========================
+node_modules/
+dist/
+build/
+coverage/
+.nyc_output/
+.tmp/
+temp/
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# =========================
+# Environment & credentials
+# =========================
+.env
+.env.local
+.env.*.local
+.env.test
+*.pem
+*.key
+*.crt
+*.p12
+*.cer
+*.csr
+*.der
+
+# =========================
+# IDE / Editor / OS
+# =========================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.iml
+
+# =========================
+# AWS / Serverless
+# =========================
+.serverless/
+.aws-sam/
+.aws/
+.aws-lambda-ric/
+*.zip
+lambda.zip
+users.zip
+package-lock.json.lck
+# Serverless build artifacts
+artifacts/
+.cache/
+.serverless_plugins/
+
+# =========================
+# Jest / Testing
+# =========================
+jest-cache/
+jest-report/
+jest_html_reporters/
+test-results.xml
+coverage/
+reports/
+
+# =========================
+# TypeScript
+# =========================
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# =========================
+# Husky / Git hooks
+# =========================
+.husky/_/
+.husky/.gitignore
+
+# =========================
+# CI/CD & local configs
+# =========================
+*.pid
+*.seed
+*.pid.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs/
+.pnp.*
+.pnpm-debug.log*
+
+# =========================
+# Mac/Linux/Windows System
+# =========================
+Desktop.ini
+.Trash-*
+.AppleDouble
+.LSOverride
+
+# =========================
+# Optional: if you use Docker locally
+# =========================
+docker-compose.override.yml
+*.dockerfile
+*.dockerignore
+.dockerignore
+.docker/
+Dockerfile*
+
+# =========================
+# Misc project-specific
+# =========================
+# Ignore generated Lambda zips and build bundles
+*.zip
+serverless-state.json
+
+# Ignore local test database files or SQLite
+*.sqlite
+*.db
+*.db-journal
+
+# =========================
+# Security
+# =========================
+# Never commit AWS credentials or keys
+.aws/credentials
+.aws/config
+
+# =========================
+# Ignore generated documentation or artifacts
+# =========================
+docs/
+public/
+site/
+artifacts/
