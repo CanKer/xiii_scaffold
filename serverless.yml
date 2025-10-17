@@ -1,0 +1,51 @@
+
+service: telegram-bot-hex-lambda
+frameworkVersion: '3'
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: eu-north-1
+  architecture: arm64
+  iam:
+    role: arn:aws:iam::330484897008:role/TelegramLambdaExec
+  environment:
+    NODE_OPTIONS: --enable-source-maps
+    PORT: ${env:PORT, '3000'}
+    MODE: ${env:MODE, 'paper'} 
+    INTERVAL_MINUTES: ${env:INTERVAL_MINUTES, '15'}
+    ADMIN_TELEGRAM_ID: ${env:ADMIN_TELEGRAM_ID, '666'}
+    TELEGRAM_BOT_TOKEN: ${env:TELEGRAM_BOT_TOKEN, 'placeholder'}
+  httpApi:
+    cors: true
+
+plugins:
+  - serverless-offline
+package:
+  patterns:
+    - '!tests/**'
+    - '!coverage/**'
+    - '!**/*.spec.ts'
+
+functions:
+  webhook:
+    handler: dist/infrastructure/http/handlers/webhookHandler.handler
+    events:
+      - httpApi:
+          path: /webhook
+          method: post
+
+  healthz:
+    handler: dist/infrastructure/http/handlers/healthHandlers.healthz
+    events:
+      - httpApi:
+          path: /healthz
+          method: get
+
+  readyz:
+    handler: dist/infrastructure/http/handlers/healthHandlers.readyz
+    events:
+      - httpApi:
+          path: /readyz
+          method: get

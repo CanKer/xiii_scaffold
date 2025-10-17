@@ -1,0 +1,24 @@
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ServerlessCore",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:*",
+        "iam:CreateRole",
+        "iam:UpdateRole",
+        "iam:DeleteRole",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PassRole",
+        "lambda:*",
+        "logs:*",
+        "apigateway:*",
+        "s3:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

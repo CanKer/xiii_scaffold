@@ -1,0 +1,121 @@
+name: ci-cd
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-central-1
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci
+      - name: Type check & build
+        run: npm run build
+      - name: Run tests
+        run: npm test
+
+  deploy-dev:
+    if: >
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'push' && github.ref != 'refs/heads/main')
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment: dev
+    concurrency:
+      group: deploy-dev-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install deps
+        run: npm ci
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::330484897008:role/XIII_GH_OIDC_Deploy
+          role-session-name: github-actions-${{ github.run_id }}
+      - name: Decide stage
+        id: stage
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "value=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          else
+            echo "value=dev" >> $GITHUB_OUTPUT
+          fi
+      - name: Deploy (${{ steps.stage.outputs.value }})
+        env:
+          STAGE: ${{ steps.stage.outputs.value }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          ADMIN_TELEGRAM_ID: ${{ secrets.ADMIN_TELEGRAM_ID }}
+          MODE: paper
+          INTERVAL_MINUTES: '15'
+        run: npx serverless deploy --stage "$STAGE" --force
+      - name: Show webhook URL
+        if: success()
+        env:
+          STAGE: ${{ steps.stage.outputs.value }}
+        run: |
+          INFO=$(npx serverless info --verbose --stage "$STAGE")
+          echo "$INFO"
+          URL=$(echo "$INFO" | awk '/endpoints:/,0' | grep -E 'POST .*?/webhook' | awk '{print $2}' | head -n1)
+          echo "Webhook URL ($STAGE): $URL"
+          {
+            echo "### Webhook URL ($STAGE)"
+            echo ""
+            echo "\`$URL\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-prod:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment: prod
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install deps
+        run: npm ci
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::330484897008:role/XIII_GH_OIDC_Deploy
+          role-session-name: github-actions-${{ github.run_id }}
+      - name: Verify AWS caller identity
+        run: aws sts get-caller-identity
+      - name: Deploy (prod)
+        run: npx serverless deploy --stage prod --force
+      - name: Show webhook URL (prod)
+        if: success()
+        run: |
+          INFO=$(npx serverless info --verbose --stage "prod")
+          echo "$INFO"
+          URL=$(echo "$INFO" | awk '/endpoints:/,0' | grep -E 'POST .*?/webhook' | awk '{print $2}' | head -n1)
+          echo "Webhook URL (prod): $URL"
+          {
+            echo "### Webhook URL (prod)"
+            echo ""
+            echo "\`$URL\`"
+          } >> "$GITHUB_STEP_SUMMARY"
